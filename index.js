@@ -287,7 +287,17 @@ var createAccessory = {
         setInfos(sensor, settings);
 
         mqttSub(settings.topic.statusTemperature, function (val) {
-            log.debug('> hap set', settings.name, 'CurrentTemperature', mqttStatus[settings.topic.statusTemperature]);
+            var temperature = mqttStatus[settings.topic.statusTemperature];
+            if(temperature.match) {
+                var regex = /^([0-9\.]+) (.+)$/;
+                var value = temperature.match(regex);
+                if(value && value.length > 2) {
+                    temperature = value[2];
+                }
+            }
+            
+            log.debug('> hap set', settings.name, 'CurrentTemperature', temperature);
+
             sensor.getService(Service.TemperatureSensor)
                 .setCharacteristic(Characteristic.CurrentTemperature, val);
         });
@@ -297,6 +307,7 @@ var createAccessory = {
             .on('get', function(callback) {
                 log.debug('< hap get', settings.name, 'TemperatureSensor', 'CurrentTemperature');
                 log.debug('> hap re_get', settings.name, mqttStatus[settings.topic.statusTemperature]);
+
                 callback(null, mqttStatus[settings.topic.statusTemperature]);
             });
 
@@ -373,7 +384,7 @@ var createAccessory = {
                 });
 
             if (settings.topic.statusBrightness) {
-                
+
                 //update status in homekit if exernal status gets updated
                 mqttSub(settings.topic.statusBrightness, function(val) {
                     log.debug('> hap set', settings.name, 'Brightness', mqttStatus[settings.topic.statusBrightness]);
@@ -381,7 +392,7 @@ var createAccessory = {
                         .getCharacteristic(Characteristic.Brightness)
                         .getValue();
                 });
-                
+
                 light.getService(Service.Lightbulb)
                     .getCharacteristic(Characteristic.Brightness)
                     .on('get', function (callback) {
