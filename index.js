@@ -288,7 +288,7 @@ var createAccessory = {
 
         mqttSub(settings.topic.statusTemperature, function (val) {
             var temperature = mqttStatus[settings.topic.statusTemperature];
-            if(temperature.match) {
+            if(temperature && temperature.match) {
                 var regex = /^([0-9\.]+) (.+)$/;
                 var value = temperature.match(regex);
                 if(value && value.length > 2) {
@@ -306,7 +306,7 @@ var createAccessory = {
             .getCharacteristic(Characteristic.CurrentTemperature)
             .on('get', function(callback) {
                 var temperature = mqttStatus[settings.topic.statusTemperature];
-                if(temperature.match) {
+                if(temperature && temperature.match) {
                     var regex = /^([0-9\.]+) (.+)$/;
                     var value = temperature.match(regex);
                     if(value && value.length > 2) {
