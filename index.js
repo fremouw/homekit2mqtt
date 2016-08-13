@@ -295,7 +295,7 @@ var createAccessory = {
                     temperature = value[2];
                 }
             }
-            
+
             log.debug('> hap set', settings.name, 'CurrentTemperature', temperature);
 
             sensor.getService(Service.TemperatureSensor)
@@ -305,10 +305,19 @@ var createAccessory = {
         sensor.addService(Service.TemperatureSensor)
             .getCharacteristic(Characteristic.CurrentTemperature)
             .on('get', function(callback) {
-                log.debug('< hap get', settings.name, 'TemperatureSensor', 'CurrentTemperature');
-                log.debug('> hap re_get', settings.name, mqttStatus[settings.topic.statusTemperature]);
+                var temperature = mqttStatus[settings.topic.statusTemperature];
+                if(temperature.match) {
+                    var regex = /^([0-9\.]+) (.+)$/;
+                    var value = temperature.match(regex);
+                    if(value && value.length > 2) {
+                        temperature = value[2];
+                    }
+                }
 
-                callback(null, mqttStatus[settings.topic.statusTemperature]);
+                log.debug('< hap get', settings.name, 'TemperatureSensor', 'CurrentTemperature');
+                log.debug('> hap re_get', settings.name, temperature);
+
+                callback(null, temperature);
             });
 
         return sensor;
@@ -792,7 +801,7 @@ bridge.publish({
     username: config.username,
     port: config.port,
     pincode: config.c,
-    category: Accessory.Categories.OTHER
+    category: Accessory.Categories.BRIDGE
 });
 
 // Listen for bridge identification event
