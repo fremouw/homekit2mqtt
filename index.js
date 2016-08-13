@@ -20,6 +20,20 @@ var mqttConnected;
 log.info('mqtt trying to connect', config.url);
 var mqtt = Mqtt.connect(config.url, {will: {topic: config.name + '/connected', payload: '0', retain: true}});
 
+function removeTimestamp(value) {
+    var sensorValue = value;
+
+    if(sensorValue && sensorValue.match) {
+        var regex = /^([0-9\.]+) (.+)$/;
+        var _value = sensorValue.match(regex);
+        if(_value && _value.length > 2) {
+            sensorValue = _value[2];
+        }
+    }
+
+    return sensorValue;
+}
+
 mqtt.on('connect', function () {
     mqttConnected = true;
     log.info('mqtt connected ' + config.url);
@@ -47,6 +61,8 @@ mqtt.on('message', function (topic, payload) {
         if (payload.indexOf('{') === -1) throw 'not an object';
         state = JSON.parse(payload).val;
     } catch (e) {
+        payload = removeTimestamp(payload);
+
         if (payload === 'true') {
             state = true;
         } else if (payload === 'false') {
@@ -287,16 +303,7 @@ var createAccessory = {
         setInfos(sensor, settings);
 
         mqttSub(settings.topic.statusTemperature, function (val) {
-            var temperature = mqttStatus[settings.topic.statusTemperature];
-            if(temperature && temperature.match) {
-                var regex = /^([0-9\.]+) (.+)$/;
-                var value = temperature.match(regex);
-                if(value && value.length > 2) {
-                    temperature = value[2];
-                }
-            }
-
-            log.debug('> hap set', settings.name, 'CurrentTemperature', temperature);
+            log.debug('> hap set', settings.name, 'CurrentTemperature', mqttStatus[settings.topic.statusTemperature]);
 
             sensor.getService(Service.TemperatureSensor)
                 .setCharacteristic(Characteristic.CurrentTemperature, val);
@@ -305,19 +312,10 @@ var createAccessory = {
         sensor.addService(Service.TemperatureSensor)
             .getCharacteristic(Characteristic.CurrentTemperature)
             .on('get', function(callback) {
-                var temperature = mqttStatus[settings.topic.statusTemperature];
-                if(temperature && temperature.match) {
-                    var regex = /^([0-9\.]+) (.+)$/;
-                    var value = temperature.match(regex);
-                    if(value && value.length > 2) {
-                        temperature = value[2];
-                    }
-                }
-
                 log.debug('< hap get', settings.name, 'TemperatureSensor', 'CurrentTemperature');
-                log.debug('> hap re_get', settings.name, temperature);
+                log.debug('> hap re_get', settings.name, mqttStatus[settings.topic.statusTemperature]);
 
-                callback(null, temperature);
+                callback(null, mqttStatus[settings.topic.statusTemperature]);
             });
 
         return sensor;
